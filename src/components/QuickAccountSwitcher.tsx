@@ -2,6 +2,7 @@ import React from 'react';
 import { X, Shield, UserCheck, Tv } from 'lucide-react';
 import { useAuction } from '../context/AuctionContext.tsx';
 import { soundEffects } from '../utils/audio.ts';
+import { TeamLogo } from './TeamLogo.tsx';
 
 interface QuickAccountSwitcherProps {
   isOpen: boolean;
@@ -118,12 +119,12 @@ export const QuickAccountSwitcher: React.FC<QuickAccountSwitcherProps> = ({
                     }`}
                   >
                     <div className="flex items-center gap-2.5 truncate">
-                      <div
-                        className="w-6 h-6 border border-black flex items-center justify-center font-heading font-black text-xs text-white"
-                        style={{ backgroundColor: t.color }}
-                      >
-                        {t.teamName.charAt(0)}
-                      </div>
+                      <TeamLogo
+                        logo={t.logo}
+                        name={t.teamName}
+                        size="xs"
+                        className="w-6 h-6 object-contain flex-shrink-0"
+                      />
                       <div className="truncate">
                         <div className="text-xs font-heading font-black uppercase truncate">
                           {t.teamName}

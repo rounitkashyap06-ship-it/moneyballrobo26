@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuction } from '../context/AuctionContext.tsx';
 import type { Team, QualificationStatus } from '../types/auction.ts';
 import { Shield, Trophy, Users, Award, CheckCircle, ExternalLink } from 'lucide-react';
+import { TeamLogo } from './TeamLogo.tsx';
 
 interface TeamsViewProps {
   onSelectTeam?: (teamId: string) => void;
@@ -95,10 +96,12 @@ export const TeamsView: React.FC<TeamsViewProps> = ({ onSelectTeam }) => {
                   }`}
                 >
                   <td className="p-3 font-bold border-r-2 border-black/10">{idx + 1}</td>
-                  <td className="p-3 font-heading font-black text-sm uppercase border-r-2 border-black/10 flex items-center gap-2">
-                    <span
-                      className="w-3.5 h-3.5 inline-block border border-black"
-                      style={{ backgroundColor: team.color }}
+                  <td className="p-3 font-heading font-black text-sm uppercase border-r-2 border-black/10 flex items-center gap-2.5">
+                    <TeamLogo
+                      logo={team.logo}
+                      name={team.teamName}
+                      size="sm"
+                      className="w-6 h-6 object-contain flex-shrink-0"
                     />
                     <span>{team.teamName}</span>
                   </td>
@@ -182,12 +185,12 @@ export const TeamsView: React.FC<TeamsViewProps> = ({ onSelectTeam }) => {
                 {/* Header */}
                 <div className="flex items-start justify-between pb-3 border-b-2 border-black">
                   <div className="flex items-center gap-3">
-                    <div
-                      className="w-10 h-10 border-2 border-black brutal-shadow-sm flex items-center justify-center font-heading font-black text-white text-lg"
-                      style={{ backgroundColor: team.color }}
-                    >
-                      {team.teamName.charAt(0)}
-                    </div>
+                    <TeamLogo
+                      logo={team.logo}
+                      name={team.teamName}
+                      size="lg"
+                      className="w-10 h-10 object-contain p-1 bg-[#FFFDF0] border-2 border-black brutal-shadow-sm flex-shrink-0"
+                    />
                     <div>
                       <h3 className="font-heading font-black text-lg text-black uppercase">
                         {team.teamName}

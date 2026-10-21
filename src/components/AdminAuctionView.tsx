@@ -591,9 +591,11 @@ export const AdminAuctionView: React.FC = () => {
                       </div>
                       {bidderTeam ? (
                         <div className="flex items-center gap-2.5 mt-2">
-                          <span
-                            className="w-3.5 h-3.5 inline-block border border-white"
-                            style={{ backgroundColor: bidderTeam.color }}
+                          <TeamLogo
+                            logo={bidderTeam.logo}
+                            name={bidderTeam.teamName}
+                            size="sm"
+                            className="w-6 h-6 object-contain flex-shrink-0"
                           />
                           <div className="font-heading font-black text-lg uppercase text-white truncate">
                             {bidderTeam.teamName}

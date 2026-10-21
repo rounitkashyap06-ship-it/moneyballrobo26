@@ -11,16 +11,19 @@ import {
   Layers,
   FileText,
   Gavel,
+  Film,
 } from 'lucide-react';
 import { useAuction } from '../context/AuctionContext.tsx';
 import { soundEffects } from '../utils/audio.ts';
 import { AudioIndicator } from './AudioIndicator.tsx';
+import { TeamLogo } from './TeamLogo.tsx';
 
 interface HeaderNavProps {
   activeTab?: string;
   onSelectTab?: (tab: string) => void;
   onOpenQuickSwitch?: () => void;
   onToggleViewer?: () => void;
+  onReplayIntro?: () => void;
   isViewerMode?: boolean;
 }
 
@@ -29,6 +32,7 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
   onSelectTab,
   onOpenQuickSwitch,
   onToggleViewer,
+  onReplayIntro,
   isViewerMode = false,
 }) => {
   const { state, currentUser, logout, refreshState, wsConnected } = useAuction();
@@ -130,6 +134,18 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
         <div className="flex items-center gap-2 sm:gap-3">
           <AudioIndicator />
 
+          {/* Replay Intro Video Button */}
+          {onReplayIntro && (
+            <button
+              onClick={onReplayIntro}
+              className="bg-[#FFD600] hover:bg-black hover:text-white text-black px-2.5 py-1.5 border-2 border-black brutal-shadow-sm font-mono text-xs font-black uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5"
+              title="Watch Intro Video"
+            >
+              <Film className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">INTRO</span>
+            </button>
+          )}
+
           {/* Viewer Projector Screen Button */}
           {onToggleViewer && (
             <button
@@ -160,6 +176,13 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
               >
                 {currentUser.role === 'admin' ? (
                   <Shield className="w-3.5 h-3.5 text-black" />
+                ) : userTeam?.logo ? (
+                  <TeamLogo
+                    logo={userTeam.logo}
+                    name={userTeam.teamName}
+                    size="xs"
+                    className="w-4 h-4 object-contain flex-shrink-0"
+                  />
                 ) : (
                   <div
                     className="w-3.5 h-3.5 border border-black"

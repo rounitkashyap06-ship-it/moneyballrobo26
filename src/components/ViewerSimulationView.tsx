@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useAuction } from '../context/AuctionContext.tsx';
 import { FCCard } from './FCCard.tsx';
+import { TeamLogo } from './TeamLogo.tsx';
 import type { Team } from '../types/auction.ts';
 
 interface ViewerSimulationViewProps {
@@ -194,12 +195,12 @@ export const ViewerSimulationView: React.FC<ViewerSimulationViewProps> = ({ onEx
 
                         {bidderTeam ? (
                           <div className="flex items-center gap-4 py-1">
-                            <div
-                              className="w-14 h-14 border-2 border-white flex items-center justify-center font-heading font-black text-white text-2xl brutal-shadow-sm flex-shrink-0"
-                              style={{ backgroundColor: bidderTeam.color }}
-                            >
-                              {bidderTeam.teamName.charAt(0)}
-                            </div>
+                            <TeamLogo
+                              logo={bidderTeam.logo}
+                              name={bidderTeam.teamName}
+                              size="xl"
+                              className="w-14 h-14 object-contain bg-white p-1.5 border-2 border-white brutal-shadow-sm flex-shrink-0"
+                            />
                             <div className="min-w-0">
                               <div className="text-3xl sm:text-4xl font-heading font-black uppercase text-white truncate leading-none">
                                 {bidderTeam.teamName}
@@ -342,10 +343,12 @@ export const ViewerSimulationView: React.FC<ViewerSimulationViewProps> = ({ onEx
                   key={t.id}
                   className={`border-b border-black/15 ${idx % 2 === 0 ? 'bg-white' : 'bg-[#FFFDF0]'}`}
                 >
-                  <td className="p-3 font-heading font-black text-sm uppercase border-r border-black/10 flex items-center gap-2">
-                    <span
-                      className="w-3.5 h-3.5 inline-block border border-black"
-                      style={{ backgroundColor: t.color }}
+                  <td className="p-3 font-heading font-black text-sm uppercase border-r border-black/10 flex items-center gap-2.5">
+                    <TeamLogo
+                      logo={t.logo}
+                      name={t.teamName}
+                      size="sm"
+                      className="w-6 h-6 object-contain flex-shrink-0"
                     />
                     <span>{t.teamName}</span>
                   </td>

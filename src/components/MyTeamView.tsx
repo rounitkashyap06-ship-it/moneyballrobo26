@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuction } from '../context/AuctionContext.tsx';
 import { FCCard } from './FCCard.tsx';
+import { TeamLogo } from './TeamLogo.tsx';
 import type { Player, Team } from '../types/auction.ts';
 import { Shield, User, Trophy, AlertTriangle, ArrowRight } from 'lucide-react';
 
@@ -9,7 +10,7 @@ export const MyTeamView: React.FC = () => {
 
   // If user is a team, show their team. If admin or guest, let them choose which team to view.
   const [selectedTeamId, setSelectedTeamId] = useState<string>(
-    currentUser?.teamId || state?.teams[0]?.id || 'team-titans'
+    currentUser?.teamId || state?.teams[0]?.id || 'team-barcelona'
   );
 
   const team = state?.teams.find((t) => t.id === selectedTeamId) || state?.teams[0];
@@ -158,12 +159,12 @@ export const MyTeamView: React.FC = () => {
       <div className="bg-white border-4 border-black brutal-shadow-lg p-6 sm:p-7">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 pb-6 border-b-4 border-black">
           <div className="flex items-center gap-4">
-            <div
-              className="w-16 h-16 border-4 border-black brutal-shadow flex items-center justify-center font-heading font-black text-white text-3xl"
-              style={{ backgroundColor: team.color }}
-            >
-              {team.teamName.charAt(0)}
-            </div>
+            <TeamLogo
+              logo={team.logo}
+              name={team.teamName}
+              size="xl"
+              className="w-16 h-16 object-contain p-1.5 bg-[#FFFDF0] border-4 border-black brutal-shadow flex-shrink-0"
+            />
 
             <div>
               <div className="flex items-center gap-2 mb-1">

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Play, Shield, Coins, Users, Award } from 'lucide-react';
+import { Play, Shield, Coins, Users, Award, Film } from 'lucide-react';
 import { useAuction } from '../context/AuctionContext.tsx';
 import { soundEffects } from '../utils/audio.ts';
 import { CyberButton } from './CyberButton.tsx';
@@ -10,7 +10,7 @@ interface PreAuctionViewProps {
 }
 
 export const PreAuctionView: React.FC<PreAuctionViewProps> = ({ onGoToAdmin }) => {
-  const { state, currentUser, startAuction } = useAuction();
+  const { state, currentUser, startAuction, replayIntro } = useAuction();
   const [countdown, setCountdown] = useState<{ hours: number; minutes: number; seconds: number }>({
     hours: 0,
     minutes: 42,
@@ -92,6 +92,17 @@ export const PreAuctionView: React.FC<PreAuctionViewProps> = ({ onGoToAdmin }) =
               SECONDS
             </span>
           </div>
+        </div>
+
+        {/* Watch Intro Video Button */}
+        <div className="mt-5 flex justify-center">
+          <CyberButton
+            title="Watch Official Intro Video"
+            onClick={replayIntro}
+            leftIcon={<Film className="w-4 h-4" />}
+            variant="ghost"
+            size="sm"
+          />
         </div>
 
         {/* Admin Gavel Armed Strip */}

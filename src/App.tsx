@@ -106,6 +106,7 @@ const MainAuctionContent: React.FC = () => {
             onSelectTab={(tab) => setCurrentTab(tab as NavTab)}
             onOpenQuickSwitch={() => setShowQuickSwitch(true)}
             onToggleViewer={() => setIsViewerScreen(true)}
+            onReplayIntro={replayIntro}
             isViewerMode={false}
           />
           <LoginScreen
@@ -138,6 +139,7 @@ const MainAuctionContent: React.FC = () => {
           onSelectTab={(tab) => setCurrentTab(tab as NavTab)}
           onOpenQuickSwitch={() => setShowQuickSwitch(true)}
           onToggleViewer={() => setIsViewerScreen(true)}
+          onReplayIntro={replayIntro}
           isViewerMode={false}
         />
 

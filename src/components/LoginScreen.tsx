@@ -41,12 +41,16 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onReplayIntro, onOpenV
   };
 
   const quickTeams = [
-    { name: 'Titans', user: 'titans', pass: 'password123', color: '#3D5AFE' },
-    { name: 'Phoenix', user: 'phoenix', pass: 'password123', color: '#FF3D00' },
-    { name: 'Warriors', user: 'warriors', pass: 'password123', color: '#00C853' },
-    { name: 'Galacticos', user: 'galacticos', pass: 'password123', color: '#FFD600' },
-    { name: 'Apex FC', user: 'apexfc', pass: 'password123', color: '#D500F9' },
-    { name: 'Vanguard', user: 'vanguard', pass: 'password123', color: '#00E5FF' },
+    { name: 'FC Barcelona', user: 'barcelona', pass: 'password123', color: '#004D98', logo: '/logos/barcelona.png' },
+    { name: 'Real Madrid', user: 'realmadrid', pass: 'password123', color: '#EE8700', logo: '/logos/realmadrid.png' },
+    { name: 'Manchester City', user: 'mancity', pass: 'password123', color: '#6CABDD', logo: '/logos/mancity.png' },
+    { name: 'Liverpool', user: 'liverpool', pass: 'password123', color: '#C8102E', logo: '/logos/liverpool.png' },
+    { name: 'Chelsea', user: 'chelsea', pass: 'password123', color: '#034694', logo: '/logos/chelsea.png' },
+    { name: 'Inter Milan', user: 'intermilan', pass: 'password123', color: '#0066B2', logo: '/logos/intermilan.png' },
+    { name: 'AC Milan', user: 'acmilan', pass: 'password123', color: '#FB090B', logo: '/logos/acmilan.png' },
+    { name: 'Juventus', user: 'juventus', pass: 'password123', color: '#000000', logo: '/logos/juventus.png' },
+    { name: 'Al-Nassr', user: 'alnassr', pass: 'password123', color: '#FFD600', logo: '/logos/alnassr.png' },
+    { name: 'Inter Miami', user: 'intermiami', pass: 'password123', color: '#F7B5CD', logo: '/logos/intermiami.png' },
   ];
 
   return (
@@ -146,17 +150,19 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onReplayIntro, onOpenV
               </button>
             </div>
 
-            <div className="grid grid-cols-3 gap-1.5">
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5">
               {quickTeams.map((team) => (
                 <button
                   key={team.user}
                   type="button"
                   onClick={() => handleFillCredentials(team.user, team.pass)}
                   className="p-1.5 bg-[#FFFDF0] hover:bg-black hover:text-white border border-black text-[10px] font-bold text-left truncate transition-colors cursor-pointer flex items-center gap-1.5"
+                  title={team.name}
                 >
-                  <span
-                    className="w-2.5 h-2.5 inline-block border border-black flex-shrink-0"
-                    style={{ backgroundColor: team.color }}
+                  <img
+                    src={team.logo}
+                    alt={team.name}
+                    className="w-4 h-4 object-contain flex-shrink-0"
                   />
                   <span className="truncate uppercase font-black">{team.name}</span>
                 </button>
@@ -164,19 +170,29 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onReplayIntro, onOpenV
             </div>
           </div>
 
-          {/* Projector Mode Launch */}
-          {onOpenViewer && (
-            <div className="mt-4 pt-4 border-t-2 border-dashed border-black/30">
+          {/* Projector Mode & Replay Intro Launch */}
+          <div className="mt-4 pt-4 border-t-2 border-dashed border-black/30 flex flex-col sm:flex-row gap-2">
+            {onReplayIntro && (
+              <button
+                type="button"
+                onClick={onReplayIntro}
+                className="flex-1 py-2.5 bg-[#FFD600] hover:bg-black hover:text-white text-black font-mono font-black text-xs uppercase tracking-wider border-2 border-black brutal-shadow-sm flex items-center justify-center gap-2 transition-all cursor-pointer"
+              >
+                <Video className="w-4 h-4" />
+                <span>WATCH INTRO VIDEO</span>
+              </button>
+            )}
+            {onOpenViewer && (
               <button
                 type="button"
                 onClick={onOpenViewer}
-                className="w-full py-2.5 bg-[#B6FF3B] hover:bg-black hover:text-[#B6FF3B] text-black font-mono font-black text-xs uppercase tracking-wider border-2 border-black brutal-shadow-sm flex items-center justify-center gap-2 transition-all cursor-pointer"
+                className="flex-1 py-2.5 bg-[#B6FF3B] hover:bg-black hover:text-[#B6FF3B] text-black font-mono font-black text-xs uppercase tracking-wider border-2 border-black brutal-shadow-sm flex items-center justify-center gap-2 transition-all cursor-pointer"
               >
                 <Tv className="w-4 h-4" />
-                <span>LAUNCH BIG SCREEN PROJECTOR MODE</span>
+                <span>PROJECTOR MODE</span>
               </button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </div>
