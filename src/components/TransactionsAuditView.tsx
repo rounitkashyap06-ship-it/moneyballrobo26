@@ -167,6 +167,8 @@ export const TransactionsAuditView: React.FC = () => {
                           ? 'bg-[#B6FF3B] text-black'
                           : tx.transactionType === 'TRANSFER'
                           ? 'bg-[#00E5FF] text-black'
+                          : tx.transactionType === 'UNSOLD'
+                          ? 'bg-[#FF1744] text-white'
                           : 'bg-[#FFD600] text-black'
                       }`}
                     >

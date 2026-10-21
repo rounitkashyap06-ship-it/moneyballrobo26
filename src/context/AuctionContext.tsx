@@ -3,6 +3,7 @@ import type {
   AuctionState,
   AuthUser,
   SoldNotification,
+  UnsoldNotification,
   AuctionConfig,
   GlobalEventState,
   QualificationStatus,
@@ -18,6 +19,7 @@ interface AuctionContextType {
   error: string | null;
   wsConnected: boolean;
   soldPopup: SoldNotification | null;
+  unsoldPopup: UnsoldNotification | null;
   isMuted: boolean;
   hasSeenIntro: boolean;
   login: (username: string, password: string) => Promise<{ success: boolean; error?: string }>;
@@ -26,6 +28,7 @@ interface AuctionContextType {
   replayIntro: () => void;
   toggleMute: () => void;
   dismissSoldPopup: () => void;
+  dismissUnsoldPopup: () => void;
   refreshState: () => Promise<void>;
   // Global & Auction Controls
   startAuction: () => Promise<boolean>;
@@ -71,8 +74,22 @@ export const AuctionProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [error, setError] = useState<string | null>(null);
   const [wsConnected, setWsConnected] = useState<boolean>(false);
   const [soldPopup, setSoldPopup] = useState<SoldNotification | null>(null);
+  const [unsoldPopup, setUnsoldPopup] = useState<UnsoldNotification | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<number | null>(null);
+
+  const dismissSoldPopup = useCallback(() => {
+    setSoldPopup(null);
+  }, []);
+
+  const dismissUnsoldPopup = useCallback(() => {
+    setUnsoldPopup(null);
+  }, []);
+
+  // Trigger unsold notification
+  const triggerUnsold = useCallback((notif: UnsoldNotification) => {
+    setUnsoldPopup(notif);
+  }, []);
 
   // Fetch current state via REST
   const refreshState = useCallback(async () => {
@@ -167,6 +184,17 @@ export const AuctionProvider: React.FC<{ children: React.ReactNode }> = ({ child
               soundEffects.playGavelWarning();
             } else if (msg.type === 'player_sold') {
               triggerCelebration(msg.payload);
+            } else if (msg.type === 'player_unsold') {
+              triggerUnsold(msg.payload.notification || {
+                id: `unsold-${Date.now()}`,
+                playerId: msg.payload.player?.id || '',
+                playerName: msg.payload.player?.name || 'Player',
+                playerPhoto: msg.payload.player?.photo || '',
+                club: msg.payload.player?.currentClub || '',
+                position: msg.payload.player?.position || 'FWD',
+                basePrice: msg.payload.player?.basePrice || 60,
+                timestamp: new Date().toISOString(),
+              });
             } else if (msg.type === 'AUCTION_RESET') {
               refreshState();
             }
@@ -217,8 +245,25 @@ export const AuctionProvider: React.FC<{ children: React.ReactNode }> = ({ child
       }
     });
 
+    eventSource.addEventListener('player_unsold', (e: MessageEvent) => {
+      try {
+        const data = JSON.parse(e.data);
+        if (data.notification) {
+          triggerUnsold(data.notification);
+        }
+      } catch (err) {
+        console.error('Error parsing player_unsold event:', err);
+      }
+    });
+
+    // Background sync fallback to keep all clients (projector, admin, franchises) 100% in sync
+    const syncInterval = window.setInterval(() => {
+      refreshState();
+    }, 2500);
+
     return () => {
       isUnmounted = true;
+      if (syncInterval) clearInterval(syncInterval);
       if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
       if (wsRef.current) wsRef.current.close();
       eventSource.close();
@@ -271,10 +316,6 @@ export const AuctionProvider: React.FC<{ children: React.ReactNode }> = ({ child
     soundEffects.setMuted(next);
   };
 
-  const dismissSoldPopup = () => {
-    setSoldPopup(null);
-  };
-
   // ADMIN API ACTIONS
   const startAuction = async () => {
     return await setGlobalState('AUCTION_LIVE');
@@ -320,7 +361,7 @@ export const AuctionProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const recordBid = async (amount: number, teamId: string) => {
     try {
-      const res = await fetch('/api/admin/set-bid', {
+      const res = await fetch('/api/bid', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ amount, teamId }),
@@ -329,6 +370,11 @@ export const AuctionProvider: React.FC<{ children: React.ReactNode }> = ({ child
       if (!res.ok) {
         return { success: false, error: data.error || 'Bid rejected' };
       }
+      if (data.liveBidding) {
+        setState((prev) => (prev ? { ...prev, liveBidding: data.liveBidding } : prev));
+        soundEffects.playBidSound();
+      }
+      refreshState();
       return { success: true };
     } catch {
       return { success: false, error: 'Network error placing bid' };
@@ -337,11 +383,20 @@ export const AuctionProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const setCallStage = async (callStage: CallStage) => {
     try {
+      setState((prev) =>
+        prev
+          ? {
+              ...prev,
+              liveBidding: { ...prev.liveBidding, callStage },
+            }
+          : prev
+      );
       const res = await fetch('/api/admin/call-stage', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ callStage }),
       });
+      refreshState();
       return res.ok;
     } catch {
       return false;
@@ -355,6 +410,7 @@ export const AuctionProvider: React.FC<{ children: React.ReactNode }> = ({ child
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ setId }),
       });
+      refreshState();
       return res.ok;
     } catch {
       return false;
@@ -368,6 +424,7 @@ export const AuctionProvider: React.FC<{ children: React.ReactNode }> = ({ child
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ playerId }),
       });
+      refreshState();
       return res.ok;
     } catch {
       return false;
@@ -377,6 +434,7 @@ export const AuctionProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const nextPlayer = async () => {
     try {
       const res = await fetch('/api/admin/next-player', { method: 'POST' });
+      refreshState();
       return res.ok;
     } catch {
       return false;
@@ -386,6 +444,7 @@ export const AuctionProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const prevPlayer = async () => {
     try {
       const res = await fetch('/api/admin/prev-player', { method: 'POST' });
+      refreshState();
       return res.ok;
     } catch {
       return false;
@@ -403,6 +462,7 @@ export const AuctionProvider: React.FC<{ children: React.ReactNode }> = ({ child
       if (!res.ok) {
         return { success: false, error: data.error || 'Could not sell player' };
       }
+      refreshState();
       return { success: true };
     } catch {
       return { success: false, error: 'Network error' };
@@ -420,6 +480,10 @@ export const AuctionProvider: React.FC<{ children: React.ReactNode }> = ({ child
       if (!res.ok) {
         return { success: false, error: data.error || 'Could not mark unsold' };
       }
+      if (data.notification) {
+        triggerUnsold(data.notification);
+      }
+      refreshState();
       return { success: true };
     } catch {
       return { success: false, error: 'Network error' };
@@ -586,6 +650,7 @@ export const AuctionProvider: React.FC<{ children: React.ReactNode }> = ({ child
         error,
         wsConnected,
         soldPopup,
+        unsoldPopup,
         isMuted,
         hasSeenIntro,
         login,
@@ -594,6 +659,7 @@ export const AuctionProvider: React.FC<{ children: React.ReactNode }> = ({ child
         replayIntro,
         toggleMute,
         dismissSoldPopup,
+        dismissUnsoldPopup,
         refreshState,
         startAuction,
         pauseAuction,

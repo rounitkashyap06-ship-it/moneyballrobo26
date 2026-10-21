@@ -124,16 +124,6 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
         {/* Center Live Status Badges */}
         <div className="hidden lg:flex items-center gap-2">
           {getGlobalStateBadge()}
-
-          {/* WebSocket real-time indicator */}
-          <div
-            className={`px-2 py-0.5 border border-black font-mono text-[9px] font-black uppercase flex items-center gap-1 ${
-              wsConnected ? 'bg-[#00C853] text-white' : 'bg-[#FF6D00] text-white'
-            }`}
-          >
-            <Radio className="w-2.5 h-2.5" />
-            <span>{wsConnected ? 'WS LIVE' : 'SYNCING'}</span>
-          </div>
         </div>
 
         {/* Right Controls & User Info */}

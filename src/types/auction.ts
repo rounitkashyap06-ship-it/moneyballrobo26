@@ -19,7 +19,7 @@ export type PlayerStatus =
   | 'transfer_available'
   | 'transferred';
 
-export type CallStage = 'NORMAL' | 'GOING_ONCE' | 'GOING_TWICE' | 'SOLD';
+export type CallStage = 'NORMAL' | 'GOING_ONCE' | 'GOING_TWICE' | 'SOLD' | 'UNSOLD';
 
 export interface PlayerStats {
   pace: number;
@@ -152,7 +152,7 @@ export interface TransferOffer {
   updatedAt: string;
 }
 
-export type TransactionType = 'AUCTION' | 'TRANSFER' | 'ADMIN_CORRECTION';
+export type TransactionType = 'AUCTION' | 'TRANSFER' | 'ADMIN_CORRECTION' | 'UNSOLD';
 
 export interface TransactionRecord {
   id: string;
@@ -166,6 +166,17 @@ export interface TransactionRecord {
   transactionType: TransactionType;
   timestamp: string;
   notes?: string;
+}
+
+export interface UnsoldNotification {
+  id: string;
+  playerId: string;
+  playerName: string;
+  playerPhoto: string;
+  club: string;
+  position: string;
+  basePrice: number;
+  timestamp: string;
 }
 
 export interface LiveBiddingState {
@@ -196,11 +207,13 @@ export interface AuctionState {
     teamName: string;
     basePrice: number;
     soldPrice: number;
+    isUnsold?: boolean;
     timestamp: string;
   }[];
   transferOffers: TransferOffer[];
   transactions: TransactionRecord[];
   recentSoldNotification: SoldNotification | null;
+  recentUnsoldNotification: UnsoldNotification | null;
   lastUpdated: string;
 }
 

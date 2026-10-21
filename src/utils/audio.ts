@@ -190,6 +190,30 @@ class SoundEffects {
       osc.stop(now + 0.35);
     } catch {}
   }
+
+  /**
+   * Somber descending gong tone when lot goes unsold
+   */
+  public playUnsoldGong() {
+    if (this.isMuted) return;
+    try {
+      this.initContext();
+      if (!this.ctx) return;
+      this.playGavelStrike();
+      const now = this.ctx.currentTime + 0.05;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(220, now);
+      osc.frequency.exponentialRampToValueAtTime(110, now + 0.6);
+      gain.gain.setValueAtTime(0.3, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.65);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.7);
+    } catch {}
+  }
 }
 
 export const soundEffects = new SoundEffects();

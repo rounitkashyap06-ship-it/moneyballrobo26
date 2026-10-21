@@ -13,6 +13,7 @@ import { MyTeamView } from './components/MyTeamView.tsx';
 import { TransferMarketView } from './components/TransferMarketView.tsx';
 import { TransactionsAuditView } from './components/TransactionsAuditView.tsx';
 import { SoldPoppingModal } from './components/SoldPoppingModal.tsx';
+import { UnsoldPoppingModal } from './components/UnsoldPoppingModal.tsx';
 import { QuickAccountSwitcher } from './components/QuickAccountSwitcher.tsx';
 import { BackgroundSpotlight } from './components/BackgroundSpotlight.tsx';
 import { Shield, Eye, Tv } from 'lucide-react';
@@ -28,6 +29,8 @@ const MainAuctionContent: React.FC = () => {
     replayIntro,
     soldPopup,
     dismissSoldPopup,
+    unsoldPopup,
+    dismissUnsoldPopup,
     loading,
   } = useAuction();
 
@@ -55,7 +58,7 @@ const MainAuctionContent: React.FC = () => {
               MONEYBALL '26
             </div>
             <div className="text-xs text-black/80 font-mono font-bold mt-1">
-              SYNCHRONIZING WEBSOCKET PROTOCOL...
+              LOADING AUCTION ENVIRONMENT...
             </div>
           </div>
         </div>
@@ -79,6 +82,12 @@ const MainAuctionContent: React.FC = () => {
             <SoldPoppingModal
               notification={soldPopup}
               onDismiss={dismissSoldPopup}
+            />
+          )}
+          {unsoldPopup && (
+            <UnsoldPoppingModal
+              notification={unsoldPopup}
+              onDismiss={dismissUnsoldPopup}
             />
           )}
         </div>
@@ -190,7 +199,7 @@ const MainAuctionContent: React.FC = () => {
             ) : isAdmin && adminViewMode === 'admin_desk' ? (
               <AdminAuctionView />
             ) : (
-              <UserLiveAuctionView />
+              <UserLiveAuctionView isParticipantOnly={adminViewMode === 'user_simulation' || !isAdmin} />
             )
           )}
 
@@ -210,6 +219,14 @@ const MainAuctionContent: React.FC = () => {
           <SoldPoppingModal
             notification={soldPopup}
             onDismiss={dismissSoldPopup}
+          />
+        )}
+
+        {/* UNSOLD POPPING MODAL: Synchronized across all screens */}
+        {unsoldPopup && (
+          <UnsoldPoppingModal
+            notification={unsoldPopup}
+            onDismiss={dismissUnsoldPopup}
           />
         )}
 
@@ -236,7 +253,7 @@ const MainAuctionContent: React.FC = () => {
               <span>·</span>
               <span>200 PLAYER POOL</span>
               <span>·</span>
-              <span>WEBSOCKET REAL-TIME BIDDING</span>
+              <span>REAL-TIME VERBAL AUCTION</span>
             </div>
           </div>
         </footer>

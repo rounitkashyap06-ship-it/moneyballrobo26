@@ -10,6 +10,7 @@ import type {
   Team,
   AuctionConfig,
   SoldNotification,
+  UnsoldNotification,
   GlobalEventState,
   QualificationStatus,
   PlayerSet,
@@ -253,6 +254,7 @@ let auctionState: AuctionState = {
   transferOffers: [],
   transactions: [],
   recentSoldNotification: null,
+  recentUnsoldNotification: null,
   lastUpdated: new Date().toISOString(),
 };
 
@@ -495,8 +497,8 @@ async function startServer() {
     res.json({ success: true, team });
   });
 
-  // ADMIN: Record Verbal Bid (+£5M, -£5M, or direct custom bid amount)
-  app.post('/api/admin/set-bid', (req: Request, res: Response) => {
+  // Unified Live Bidding Endpoint (Admin verbal entry & Franchise team direct bids)
+  const handleBidRequest = (req: Request, res: Response) => {
     const { amount, teamId } = req.body;
     const numericAmount = Number(amount);
 
@@ -504,9 +506,13 @@ async function startServer() {
       return res.status(400).json({ error: 'Valid bid amount is required' });
     }
 
+    if (!teamId) {
+      return res.status(400).json({ error: 'Bidding team must be specified' });
+    }
+
     const team = auctionState.teams.find((t) => t.id === teamId);
     if (!team) {
-      return res.status(404).json({ error: 'Team not found' });
+      return res.status(404).json({ error: `Team with ID "${teamId}" not found` });
     }
 
     // Bid validation: purse check
@@ -523,6 +529,17 @@ async function startServer() {
       });
     }
 
+    const currentPlayer = auctionState.players.find((p) => p.id === auctionState.currentPlayerId);
+    const basePrice = currentPlayer?.basePrice || 10;
+
+    // Must be at least the base price if opening bid
+    if (numericAmount < basePrice) {
+      return res.status(400).json({
+        error: `Bid must be at least the lot base price of £${basePrice}M.`,
+      });
+    }
+
+    // Update live bidding state
     auctionState.liveBidding = {
       playerId: auctionState.currentPlayerId,
       currentBid: numericAmount,
@@ -534,8 +551,11 @@ async function startServer() {
 
     broadcast('BID_UPDATE', auctionState.liveBidding);
     broadcastStateUpdate();
-    res.json({ success: true, liveBidding: auctionState.liveBidding });
-  });
+    res.json({ success: true, liveBidding: auctionState.liveBidding, team });
+  };
+
+  app.post('/api/bid', handleBidRequest);
+  app.post('/api/admin/set-bid', handleBidRequest);
 
   // ADMIN: Set Call Stage (NORMAL, GOING_ONCE, GOING_TWICE, SOLD)
   app.post('/api/admin/call-stage', (req: Request, res: Response) => {
@@ -786,7 +806,48 @@ async function startServer() {
       return res.status(404).json({ error: 'Player not found' });
     }
 
+    const now = new Date().toISOString();
     player.status = 'unsold';
+
+    // Record into salesHistory for confirmation feed
+    auctionState.salesHistory.unshift({
+      id: `unsold-${Date.now()}`,
+      playerId: player.id,
+      playerName: player.name,
+      club: player.currentClub,
+      teamId: 'UNSOLD',
+      teamName: 'UNSOLD',
+      basePrice: player.basePrice,
+      soldPrice: 0,
+      isUnsold: true,
+      timestamp: now,
+    });
+
+    const notif: UnsoldNotification = {
+      id: `unsold-notif-${Date.now()}`,
+      playerId: player.id,
+      playerName: player.name,
+      playerPhoto: player.photo,
+      club: player.currentClub,
+      position: player.position,
+      basePrice: player.basePrice,
+      timestamp: now,
+    };
+    auctionState.recentUnsoldNotification = notif;
+
+    // Record in transactions ledger
+    const txRecord = {
+      id: `tx-unsold-${Date.now()}`,
+      playerId: player.id,
+      playerName: player.name,
+      buyerTeamId: 'UNSOLD',
+      buyerTeamName: 'UNSOLD',
+      amount: 0,
+      transactionType: 'UNSOLD' as const,
+      timestamp: now,
+      notes: `Lot Passed: Base £${player.basePrice}M · Marked UNSOLD by Auctioneer`,
+    };
+    auctionState.transactions.unshift(txRecord);
 
     // Auto-advance to next upcoming player
     const nextUpcoming = auctionState.players.find((p) => p.status === 'upcoming');
@@ -803,9 +864,9 @@ async function startServer() {
       };
     }
 
-    broadcast('player_unsold', { player });
+    broadcast('player_unsold', { player, notification: notif });
     broadcastStateUpdate();
-    res.json({ success: true, player });
+    res.json({ success: true, player, notification: notif });
   });
 
   // ADMIN: Edit Sale / Admin Correction
@@ -1230,6 +1291,7 @@ async function startServer() {
     auctionState.transferOffers = [];
     auctionState.transactions = [];
     auctionState.recentSoldNotification = null;
+    auctionState.recentUnsoldNotification = null;
     auctionState.currentPlayerId = auctionState.players[0]?.id || null;
     auctionState.status = 'live';
     auctionState.globalState = 'AUCTION_LIVE';

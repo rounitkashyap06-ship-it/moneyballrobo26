@@ -9,6 +9,7 @@ import {
   Gavel,
   Radio,
   CheckCircle,
+  XCircle,
 } from 'lucide-react';
 import { useAuction } from '../context/AuctionContext.tsx';
 import { FCCard } from './FCCard.tsx';
@@ -68,16 +69,8 @@ export const ViewerSimulationView: React.FC<ViewerSimulationViewProps> = ({ onEx
           </div>
         </div>
 
-        {/* Live Stage Status Indicator */}
+        {/* Controls */}
         <div className="flex items-center gap-3">
-          <div
-            className={`px-3 py-1 border-2 border-black text-xs font-black uppercase flex items-center gap-1.5 ${
-              wsConnected ? 'bg-[#00C853] text-white' : 'bg-[#FF6D00] text-white'
-            }`}
-          >
-            <Radio className="w-3.5 h-3.5" />
-            <span>{wsConnected ? 'WEBSOCKET SYNCHRONIZED' : 'CONNECTING...'}</span>
-          </div>
 
           <button
             onClick={toggleFullscreen}
@@ -118,6 +111,13 @@ export const ViewerSimulationView: React.FC<ViewerSimulationViewProps> = ({ onEx
         <div className="bg-[#00C853] text-white border-4 border-black p-5 brutal-shadow-lg text-center font-heading font-black text-3xl sm:text-4xl uppercase tracking-wider flex items-center justify-center gap-3">
           <CheckCircle className="w-8 h-8 text-white" />
           <span>SOLD TO {liveBidding.currentBidderTeamName}! (£{liveBidding.currentBid}M)</span>
+        </div>
+      )}
+
+      {liveBidding.callStage === 'UNSOLD' && (
+        <div className="bg-[#FF1744] text-white border-4 border-black p-5 brutal-shadow-lg text-center font-heading font-black text-3xl sm:text-4xl uppercase tracking-wider flex items-center justify-center gap-3">
+          <XCircle className="w-8 h-8 text-white" />
+          <span>LOT PASSED · MARKED UNSOLD (£0M)</span>
         </div>
       )}
 
@@ -173,49 +173,68 @@ export const ViewerSimulationView: React.FC<ViewerSimulationViewProps> = ({ onEx
                   </div>
 
                   {/* Current Bidder Box */}
-                  <div className="bg-black text-white p-5 border-4 border-black brutal-shadow">
-                    <div className="text-xs text-[#FFD600] font-black uppercase tracking-wider">
-                      CURRENT BIDDER FRANCHISE
-                    </div>
-                    <div className="text-3xl font-heading font-black uppercase mt-1 truncate">
-                      {liveBidding.currentBidderTeamName || 'NO BIDDER YET'}
-                    </div>
-                    <div className="text-xs text-white/70 font-bold mt-1">
-                      {liveBidding.lastBidTimestamp
-                        ? `Adjudicated at ${new Date(liveBidding.lastBidTimestamp).toLocaleTimeString()}`
-                        : 'Awaiting opening verbal offer'}
-                    </div>
-                  </div>
-                </div>
-              </div>
+                  {(() => {
+                    const bidderTeam = teams.find((t) => t.id === liveBidding.currentBidderTeamId);
+                    return (
+                      <div className="bg-black text-white p-6 border-4 border-black brutal-shadow space-y-3">
+                        <div className="flex items-center justify-between pb-2 border-b border-white/20">
+                          <span className="text-xs text-[#FFD600] font-black uppercase tracking-wider">
+                            CURRENT BIDDER FRANCHISE
+                          </span>
+                          {liveBidding.currentBidderTeamId ? (
+                            <span className="bg-[#00C853] text-black text-[10px] font-mono font-black uppercase px-2.5 py-0.5 border border-white animate-pulse">
+                              ● ACTIVE LEADER
+                            </span>
+                          ) : (
+                            <span className="bg-[#FFD600] text-black text-[10px] font-mono font-black uppercase px-2.5 py-0.5 border border-white">
+                              OPEN LOT
+                            </span>
+                          )}
+                        </div>
 
-              {/* 6 Attributes Grid */}
-              <div className="pt-4 border-t-2 border-black">
-                <div className="grid grid-cols-6 gap-2 text-center font-mono">
-                  <div className="bg-[#FFF8E7] border-2 border-black p-2">
-                    <div className="text-[10px] text-black/60 font-black">PACE</div>
-                    <div className="text-lg font-heading font-black">{currentPlayer.stats.pace}</div>
-                  </div>
-                  <div className="bg-[#FFF8E7] border-2 border-black p-2">
-                    <div className="text-[10px] text-black/60 font-black">SHOOTING</div>
-                    <div className="text-lg font-heading font-black">{currentPlayer.stats.shooting}</div>
-                  </div>
-                  <div className="bg-[#FFF8E7] border-2 border-black p-2">
-                    <div className="text-[10px] text-black/60 font-black">PASSING</div>
-                    <div className="text-lg font-heading font-black">{currentPlayer.stats.passing}</div>
-                  </div>
-                  <div className="bg-[#FFF8E7] border-2 border-black p-2">
-                    <div className="text-[10px] text-black/60 font-black">DRIBBLING</div>
-                    <div className="text-lg font-heading font-black">{currentPlayer.stats.dribbling}</div>
-                  </div>
-                  <div className="bg-[#FFF8E7] border-2 border-black p-2">
-                    <div className="text-[10px] text-black/60 font-black">DEFENDING</div>
-                    <div className="text-lg font-heading font-black">{currentPlayer.stats.defending}</div>
-                  </div>
-                  <div className="bg-[#FFF8E7] border-2 border-black p-2">
-                    <div className="text-[10px] text-black/60 font-black">PHYSICAL</div>
-                    <div className="text-lg font-heading font-black">{currentPlayer.stats.physical}</div>
-                  </div>
+                        {bidderTeam ? (
+                          <div className="flex items-center gap-4 py-1">
+                            <div
+                              className="w-14 h-14 border-2 border-white flex items-center justify-center font-heading font-black text-white text-2xl brutal-shadow-sm flex-shrink-0"
+                              style={{ backgroundColor: bidderTeam.color }}
+                            >
+                              {bidderTeam.teamName.charAt(0)}
+                            </div>
+                            <div className="min-w-0">
+                              <div className="text-3xl sm:text-4xl font-heading font-black uppercase text-white truncate leading-none">
+                                {bidderTeam.teamName}
+                              </div>
+                              <div className="text-xs text-[#FFD600] font-bold mt-2 flex items-center gap-2">
+                                <span>REMAINING PURSE: £{bidderTeam.remainingBalance}M</span>
+                                <span className="text-white/40">·</span>
+                                <span className="text-white/80">{bidderTeam.boughtPlayers.length} / {bidderTeam.maxSquadSize} SQUAD</span>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="py-2 space-y-1">
+                            <div className="text-2xl sm:text-3xl font-heading font-black uppercase text-white">
+                              NO BID RECORDED YET
+                            </div>
+                            <div className="text-xs text-[#FFD600] font-bold">
+                              Opening base: £{currentPlayer?.basePrice || 60}M · Awaiting opening verbal offer
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="text-xs text-white/60 font-mono font-bold pt-2 border-t border-white/10 flex items-center justify-between">
+                          <span>
+                            {liveBidding.lastBidTimestamp
+                              ? `Adjudicated at ${new Date(liveBidding.lastBidTimestamp).toLocaleTimeString()}`
+                              : 'Waiting for gavel opening offer'}
+                          </span>
+                          {liveBidding.currentBidderTeamId && (
+                            <span className="text-[#B6FF3B] font-black">LEADER (£{liveBidding.currentBid}M)</span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             </div>
@@ -231,41 +250,69 @@ export const ViewerSimulationView: React.FC<ViewerSimulationViewProps> = ({ onEx
         {/* ==================== SIDE FEED: RECENT SALES & LOT QUEUE (4 Cols) ==================== */}
         <div className="xl:col-span-4 space-y-6">
           <div className="bg-white border-4 border-black brutal-shadow-lg p-5 space-y-3">
-            <div className="flex items-center justify-between pb-3 border-b-2 border-black">
-              <span className="font-heading font-black text-sm uppercase text-black">
-                CONFIRMED SALES FEED
-              </span>
-              <span className="text-[10px] bg-[#B6FF3B] px-2 py-0.5 border border-black font-black">
-                {salesHistory.length} LOTS SOLD
-              </span>
-            </div>
-
-            {salesHistory.length === 0 ? (
-              <div className="p-4 bg-[#FFF8E7] border-2 border-black text-center text-xs text-black/60 font-bold">
-                No lots hammered yet.
-              </div>
-            ) : (
-              <div className="space-y-2 max-h-[460px] overflow-y-auto pr-1">
-                {salesHistory.map((sale) => (
-                  <div
-                    key={sale.id}
-                    className="p-3 bg-[#FFFDF0] border-2 border-black flex items-center justify-between"
-                  >
-                    <div className="truncate">
-                      <div className="font-heading font-black text-sm uppercase truncate text-black">
-                        {sale.playerName}
-                      </div>
-                      <div className="text-xs text-black/70 truncate">
-                        Sold to <strong className="text-black">{sale.teamName}</strong>
-                      </div>
-                    </div>
-                    <span className="bg-[#FFD600] px-2.5 py-1 border-2 border-black font-black text-sm text-black flex-shrink-0">
-                      £{sale.soldPrice}M
+            {(() => {
+              const soldCount = salesHistory.filter((s) => !s.isUnsold && s.teamName !== 'UNSOLD').length;
+              const unsoldCount = salesHistory.filter((s) => s.isUnsold || s.teamName === 'UNSOLD').length;
+              return (
+                <>
+                  <div className="flex items-center justify-between pb-3 border-b-2 border-black">
+                    <span className="font-heading font-black text-sm uppercase text-black">
+                      CONFIRMED AUCTION FEED
+                    </span>
+                    <span className="text-[10px] bg-[#FFF8E7] px-2 py-0.5 border border-black font-black">
+                      {soldCount} SOLD · {unsoldCount} UNSOLD
                     </span>
                   </div>
-                ))}
-              </div>
-            )}
+
+                  {salesHistory.length === 0 ? (
+                    <div className="p-4 bg-[#FFF8E7] border-2 border-black text-center text-xs text-black/60 font-bold">
+                      No lots hammered yet.
+                    </div>
+                  ) : (
+                    <div className="space-y-2 max-h-[460px] overflow-y-auto pr-1">
+                      {salesHistory.map((sale) => {
+                        const isUnsoldItem = sale.isUnsold || sale.teamName === 'UNSOLD';
+                        return (
+                          <div
+                            key={sale.id}
+                            className={`p-3 border-2 border-black flex items-center justify-between ${
+                              isUnsoldItem ? 'bg-[#FFF0F2] border-l-4 border-l-[#FF1744]' : 'bg-[#FFFDF0]'
+                            }`}
+                          >
+                            <div className="truncate mr-2">
+                              <div className="font-heading font-black text-sm uppercase truncate text-black flex items-center gap-2">
+                                <span>{sale.playerName}</span>
+                                {isUnsoldItem && (
+                                  <span className="bg-[#FF1744] text-white px-1.5 py-0.2 text-[9px] font-mono font-black uppercase">
+                                    UNSOLD
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-xs text-black/70 truncate">
+                                {isUnsoldItem ? (
+                                  <span>Passed opening base reserve of £{sale.basePrice}M</span>
+                                ) : (
+                                  <span>Sold to <strong className="text-black">{sale.teamName}</strong></span>
+                                )}
+                              </div>
+                            </div>
+                            {isUnsoldItem ? (
+                              <span className="bg-[#FF1744] text-white px-2.5 py-1 border-2 border-black font-black text-xs uppercase flex-shrink-0">
+                                PASSED
+                              </span>
+                            ) : (
+                              <span className="bg-[#FFD600] px-2.5 py-1 border-2 border-black font-black text-sm text-black flex-shrink-0">
+                                £{sale.soldPrice}M
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </>
+              );
+            })()}
           </div>
         </div>
       </div>

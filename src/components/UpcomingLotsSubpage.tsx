@@ -139,23 +139,13 @@ export const UpcomingLotsSubpage: React.FC<UpcomingLotsSubpageProps> = ({ onBack
                 </div>
 
                 {/* Name & Nationality */}
-                <div className="mb-3 font-mono">
+                <div className="mb-3 font-mono text-center">
                   <div className="text-[10px] text-black/70 uppercase font-black">
-                    {player.nationality}
+                    {player.nationality} · {player.currentClub}
                   </div>
-                  <h3 className="text-lg font-heading text-black truncate uppercase group-hover:text-[#3D5AFE] transition-colors">
+                  <h3 className="text-lg font-heading text-black truncate uppercase group-hover:text-[#3D5AFE] transition-colors mt-0.5">
                     {player.name}
                   </h3>
-                </div>
-
-                {/* Stat Grid */}
-                <div className="grid grid-cols-3 gap-1 text-center text-[10px] font-mono mb-3 bg-[#FFF8E7] p-2 border-2 border-black font-bold">
-                  <div>PAC: <strong>{player.stats.pace}</strong></div>
-                  <div>SHO: <strong>{player.stats.shooting}</strong></div>
-                  <div>PAS: <strong>{player.stats.passing}</strong></div>
-                  <div>DRI: <strong>{player.stats.dribbling}</strong></div>
-                  <div>DEF: <strong>{player.stats.defending}</strong></div>
-                  <div>PHY: <strong>{player.stats.physical}</strong></div>
                 </div>
               </div>
 
@@ -165,7 +155,7 @@ export const UpcomingLotsSubpage: React.FC<UpcomingLotsSubpageProps> = ({ onBack
                   BASE PRICE
                 </span>
                 <span className="text-base font-black text-black bg-[#FFD600] px-2 py-0.5 border border-black">
-                  ${player.basePrice}M
+                  £{player.basePrice}M
                 </span>
               </div>
             </div>
@@ -184,17 +174,11 @@ export const UpcomingLotsSubpage: React.FC<UpcomingLotsSubpageProps> = ({ onBack
               <X className="w-4 h-4" />
             </button>
 
-            <div className="flex items-center gap-4 mb-5">
-              <img
-                src={selectedPlayer.photo}
-                alt={selectedPlayer.name}
-                className="w-20 h-24 object-contain bg-transparent border-3 border-black brutal-shadow-sm"
-                onError={(e) => {
-                  (e.currentTarget as HTMLImageElement).src =
-                    'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?q=80&w=800&auto=format&fit=crop';
-                }}
-              />
-              <div className="font-mono">
+            <div className="flex flex-col items-center mb-5">
+              <div className="mb-3">
+                <FCCard player={selectedPlayer} size="md" showHover={false} />
+              </div>
+              <div className="font-mono text-center">
                 <span className="text-[10px] bg-black text-white px-2 py-0.5 font-black uppercase">
                   {selectedPlayer.position} · {selectedPlayer.nationality}
                 </span>
@@ -203,18 +187,9 @@ export const UpcomingLotsSubpage: React.FC<UpcomingLotsSubpageProps> = ({ onBack
                 </h3>
                 <p className="text-xs text-black font-bold">{selectedPlayer.currentClub}</p>
                 <div className="text-lg font-black text-black bg-[#FFD600] px-2 py-0.5 border border-black inline-block mt-2">
-                  BASE: ${selectedPlayer.basePrice}M
+                  BASE: £{selectedPlayer.basePrice}M
                 </div>
               </div>
-            </div>
-
-            <div className="grid grid-cols-3 gap-2 text-center text-xs font-mono bg-[#FFF8E7] p-3 border-2 border-black mb-4 font-bold">
-              <div>PAC: <strong>{selectedPlayer.stats.pace}</strong></div>
-              <div>SHO: <strong>{selectedPlayer.stats.shooting}</strong></div>
-              <div>PAS: <strong>{selectedPlayer.stats.passing}</strong></div>
-              <div>DRI: <strong>{selectedPlayer.stats.dribbling}</strong></div>
-              <div>DEF: <strong>{selectedPlayer.stats.defending}</strong></div>
-              <div>PHY: <strong>{selectedPlayer.stats.physical}</strong></div>
             </div>
 
             <div className="text-xs font-mono font-bold text-black flex items-center justify-between border-t-2 border-black pt-3">

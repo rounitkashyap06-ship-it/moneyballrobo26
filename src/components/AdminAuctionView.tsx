@@ -40,9 +40,15 @@ export const AdminAuctionView: React.FC = () => {
     editSale,
     resetAuction,
     updateConfig,
+    recordBid,
+    setCallStage,
   } = useAuction();
 
   const [activeTab, setActiveTab] = useState<'simulation' | 'upcoming_subpage' | 'sold_overview' | 'edit_sale' | 'setup'>('simulation');
+
+  // Gavel Bid Recording State
+  const [selectedBidderTeamId, setSelectedBidderTeamId] = useState<string>('');
+  const [deskBidError, setDeskBidError] = useState<string | null>(null);
 
   // Sell Modal
   const [showSellModal, setShowSellModal] = useState(false);
@@ -501,67 +507,25 @@ export const AdminAuctionView: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Master Gavel Toolbar */}
-                  <div className="w-full space-y-2.5 pt-3 border-t-2 border-black mt-2">
-                    <div className="flex items-center gap-2">
-                      {state?.status === 'not_started' ? (
-                        <CyberButton
-                          title="START AUCTION"
-                          onClick={startAuction}
-                          leftIcon={<Play className="w-4 h-4 fill-black" />}
-                          variant="primary"
-                          size="md"
-                          className="flex-1"
-                        />
-                      ) : (
-                        <CyberButton
-                          title={state?.status === 'paused' ? 'RESUME' : 'PAUSE GAVEL'}
-                          onClick={pauseAuction}
-                          leftIcon={state?.status === 'paused' ? <Play className="w-4 h-4 fill-white" /> : <Pause className="w-4 h-4" />}
-                          variant={state?.status === 'paused' ? 'primary' : 'amber'}
-                          size="md"
-                          className="flex-1"
-                        />
-                      )}
+                  {/* Clean Lot Navigation Toolbar */}
+                  <div className="w-full flex items-center justify-between pt-3 border-t-2 border-black mt-2 font-mono">
+                    <button
+                      onClick={prevPlayer}
+                      className="px-3.5 py-2 bg-white hover:bg-[#FFD600] border-2 border-black font-black text-xs uppercase brutal-shadow-sm active:translate-x-[2px] active:translate-y-[2px] active:shadow-none cursor-pointer flex items-center gap-1.5 transition-colors"
+                      title="Previous Lot"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                      <span>PREV LOT</span>
+                    </button>
 
-                      <button
-                        onClick={prevPlayer}
-                        className="p-2.5 bg-white hover:bg-[#FFD600] border-2 border-black brutal-shadow-sm active:translate-x-[2px] active:translate-y-[2px] active:shadow-none cursor-pointer"
-                        title="Previous Lot"
-                      >
-                        <ChevronLeft className="w-4 h-4" />
-                      </button>
-
-                      <button
-                        onClick={nextPlayer}
-                        className="p-2.5 bg-white hover:bg-[#FFD600] border-2 border-black brutal-shadow-sm active:translate-x-[2px] active:translate-y-[2px] active:shadow-none cursor-pointer"
-                        title="Next Lot"
-                      >
-                        <ChevronRight className="w-4 h-4" />
-                      </button>
-                    </div>
-
-                    {currentPlayer.status !== 'sold' && (
-                      <div className="grid grid-cols-2 gap-2 pt-1">
-                        <CyberButton
-                          title="DROP GAVEL · SOLD"
-                          onClick={handleOpenSellModal}
-                          leftIcon={<Gavel className="w-4 h-4" />}
-                          variant="lime"
-                          size="md"
-                          fullWidth
-                        />
-
-                        <CyberButton
-                          title="PASS / UNSOLD"
-                          onClick={handleMarkUnsold}
-                          leftIcon={<XCircle className="w-4 h-4" />}
-                          variant="ghost"
-                          size="md"
-                          fullWidth
-                        />
-                      </div>
-                    )}
+                    <button
+                      onClick={nextPlayer}
+                      className="px-3.5 py-2 bg-white hover:bg-[#FFD600] border-2 border-black font-black text-xs uppercase brutal-shadow-sm active:translate-x-[2px] active:translate-y-[2px] active:shadow-none cursor-pointer flex items-center gap-1.5 transition-colors"
+                      title="Next Lot"
+                    >
+                      <span>NEXT LOT</span>
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
               ) : (
@@ -573,80 +537,183 @@ export const AdminAuctionView: React.FC = () => {
 
             {/* ==================== 3. RIGHT SIDE: REST OF PLAYER STATS & AUCTION METRICS (4 Cols) ==================== */}
             <div className="lg:col-span-4 xl:col-span-4 space-y-5">
-              {currentPlayer && (
-                <div className="bg-white border-4 border-black brutal-shadow-lg p-5 space-y-3 font-mono">
-                  <div className="flex items-center justify-between border-b-2 border-black pb-2">
-                    <span className="text-xs font-black uppercase tracking-wider text-black bg-[#B6FF3B] px-2 py-0.5 border border-black">
-                      ATTRIBUTES RADAR
-                    </span>
-                    <span className="text-xs font-bold bg-black text-white px-2 py-0.5">
-                      OVR {currentPlayer.stats.overall}
-                    </span>
+              {/* Live Bid & Current Bidder Gavel Desk */}
+              {(() => {
+                const liveBidding = state?.liveBidding || {
+                  currentBid: currentPlayer?.basePrice || 60,
+                  currentBidderTeamId: null,
+                  currentBidderTeamName: null,
+                  callStage: 'NORMAL',
+                  lastBidTimestamp: null,
+                };
+                const bidderTeam = state?.teams.find((t) => t.id === liveBidding.currentBidderTeamId);
+                const activeTeamId = selectedBidderTeamId || state?.teams[0]?.id || '';
+
+                const handleQuickBid = async (inc: number) => {
+                  if (!activeTeamId) return;
+                  const newBid = Math.max(currentPlayer?.basePrice || 10, liveBidding.currentBid + inc);
+                  setDeskBidError(null);
+                  const res = await recordBid(newBid, activeTeamId);
+                  if (!res.success) {
+                    setDeskBidError(res.error || 'Bid rejected');
+                  }
+                };
+
+                return (
+                  <div className="bg-white border-4 border-black brutal-shadow-lg p-5 space-y-4 font-mono">
+                    <div className="flex items-center justify-between border-b-2 border-black pb-2">
+                      <span className="text-xs font-black uppercase tracking-wider text-black bg-[#B6FF3B] px-2 py-0.5 border border-black">
+                        LIVE GAVEL & BIDDER DESK
+                      </span>
+                      <span className="text-xs font-bold bg-black text-white px-2 py-0.5">
+                        STAGE: {liveBidding.callStage}
+                      </span>
+                    </div>
+
+                    {/* Current Bid Display */}
+                    <div className="bg-[#FFF8E7] border-3 border-black p-3.5 brutal-shadow-sm text-center">
+                      <div className="text-[10px] text-black/70 font-black uppercase">CURRENT HIGHEST BID</div>
+                      <div className="text-3xl font-heading font-black text-black mt-0.5">
+                        £{liveBidding.currentBid}M
+                      </div>
+                      <div className="text-[11px] text-black/80 font-bold mt-1">
+                        OPENING BASE: £{currentPlayer?.basePrice || 60}M
+                      </div>
+                    </div>
+
+                    {/* Current Bidder Box */}
+                    <div className="bg-black text-white p-4 border-3 border-black brutal-shadow-sm">
+                      <div className="text-[10px] text-[#FFD600] font-black uppercase tracking-wider flex items-center justify-between">
+                        <span>CURRENT BIDDER FRANCHISE</span>
+                        {liveBidding.currentBidderTeamId && (
+                          <span className="text-[#00C853] text-[9px] font-black">● ACTIVE</span>
+                        )}
+                      </div>
+                      {bidderTeam ? (
+                        <div className="flex items-center gap-2.5 mt-2">
+                          <span
+                            className="w-3.5 h-3.5 inline-block border border-white"
+                            style={{ backgroundColor: bidderTeam.color }}
+                          />
+                          <div className="font-heading font-black text-lg uppercase text-white truncate">
+                            {bidderTeam.teamName}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="font-heading font-black text-sm uppercase text-white/80 mt-1.5">
+                          NO BID RECORDED YET
+                        </div>
+                      )}
+                      <div className="text-[10px] text-white/60 font-bold mt-1">
+                        {liveBidding.lastBidTimestamp
+                          ? `Recorded at ${new Date(liveBidding.lastBidTimestamp).toLocaleTimeString()}`
+                          : 'Awaiting opening verbal offer'}
+                      </div>
+                    </div>
+
+                    {/* Bidding Franchise Selection & Quick Adjust */}
+                    <div>
+                      <label className="block text-[10px] font-black uppercase text-black/70 mb-1">
+                        BID AS FRANCHISE:
+                      </label>
+                      <select
+                        value={selectedBidderTeamId || activeTeamId}
+                        onChange={(e) => {
+                          setSelectedBidderTeamId(e.target.value);
+                          setDeskBidError(null);
+                        }}
+                        className="w-full p-2 bg-[#FFF8E7] border-2 border-black text-xs font-bold font-mono mb-2"
+                      >
+                        {state?.teams.map((t) => (
+                          <option key={t.id} value={t.id}>
+                            {t.teamName} (Purse: £{t.remainingBalance}M)
+                          </option>
+                        ))}
+                      </select>
+
+                      <div className="grid grid-cols-3 gap-1.5">
+                        <button
+                          onClick={() => handleQuickBid(2.5)}
+                          className="py-2 bg-[#B6FF3B] hover:bg-black hover:text-white border-2 border-black font-black text-xs uppercase brutal-shadow-sm cursor-pointer transition-colors"
+                        >
+                          +£2.5M
+                        </button>
+                        <button
+                          onClick={() => handleQuickBid(5)}
+                          className="py-2 bg-[#FFD600] hover:bg-black hover:text-white border-2 border-black font-black text-xs uppercase brutal-shadow-sm cursor-pointer transition-colors"
+                        >
+                          +£5M
+                        </button>
+                        <button
+                          onClick={() => handleQuickBid(-5)}
+                          className="py-2 bg-[#FFF8E7] hover:bg-black hover:text-white border-2 border-black font-black text-xs uppercase brutal-shadow-sm cursor-pointer transition-colors"
+                        >
+                          -£5M
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Gavel Warnings */}
+                    <div className="grid grid-cols-2 gap-2 pt-1 border-t border-black/20">
+                      <button
+                        onClick={() => setCallStage('GOING_ONCE')}
+                        className="py-2 bg-[#FFD600] hover:bg-black hover:text-white border-2 border-black font-black text-xs uppercase brutal-shadow-sm cursor-pointer transition-colors"
+                      >
+                        GOING ONCE
+                      </button>
+                      <button
+                        onClick={() => setCallStage('GOING_TWICE')}
+                        className="py-2 bg-[#FF6D00] hover:bg-black text-white border-2 border-black font-black text-xs uppercase brutal-shadow-sm cursor-pointer transition-colors"
+                      >
+                        GOING TWICE
+                      </button>
+                    </div>
+
+                    {/* Sold & Unsold Options directly below Going Once and Going Twice */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={async () => {
+                          if (!currentPlayer) return;
+                          const winningTeamId = liveBidding.currentBidderTeamId || selectedBidderTeamId || activeTeamId;
+                          if (!winningTeamId) {
+                            setDeskBidError('Select a winning franchise first');
+                            return;
+                          }
+                          setDeskBidError(null);
+                          const res = await sellPlayer(currentPlayer.id, winningTeamId, liveBidding.currentBid);
+                          if (!res.success) {
+                            setDeskBidError(res.error || 'Sale failed');
+                          }
+                        }}
+                        className="py-2.5 bg-[#00C853] hover:bg-black text-white border-2 border-black font-heading font-black text-xs uppercase brutal-shadow-sm cursor-pointer transition-colors flex items-center justify-center gap-1.5"
+                      >
+                        <span>🔨</span>
+                        <span>SOLD!</span>
+                      </button>
+                      <button
+                        onClick={async () => {
+                          if (!currentPlayer) return;
+                          setDeskBidError(null);
+                          const res = await markUnsold(currentPlayer.id);
+                          if (!res.success) {
+                            setDeskBidError(res.error || 'Could not mark unsold');
+                          }
+                        }}
+                        className="py-2.5 bg-[#FF1744] hover:bg-black text-white border-2 border-black font-heading font-black text-xs uppercase brutal-shadow-sm cursor-pointer transition-colors flex items-center justify-center gap-1.5"
+                      >
+                        <span>✕</span>
+                        <span>UNSOLD</span>
+                      </button>
+                    </div>
+
+                    {deskBidError && (
+                      <div className="p-2 bg-red-100 border-2 border-red-600 text-red-700 font-bold text-xs">
+                        {deskBidError}
+                      </div>
+                    )}
                   </div>
-
-                  <div className="space-y-2 text-xs">
-                    <div>
-                      <div className="flex justify-between text-[11px] font-bold mb-0.5">
-                        <span>PACE</span>
-                        <span>{currentPlayer.stats.pace}</span>
-                      </div>
-                      <div className="w-full h-2 bg-[#FFF8E7] border border-black">
-                        <div className="h-full bg-[#FFD600]" style={{ width: `${currentPlayer.stats.pace}%` }} />
-                      </div>
-                    </div>
-
-                    <div>
-                      <div className="flex justify-between text-[11px] font-bold mb-0.5">
-                        <span>SHOOTING</span>
-                        <span>{currentPlayer.stats.shooting}</span>
-                      </div>
-                      <div className="w-full h-2 bg-[#FFF8E7] border border-black">
-                        <div className="h-full bg-[#FF5CA8]" style={{ width: `${currentPlayer.stats.shooting}%` }} />
-                      </div>
-                    </div>
-
-                    <div>
-                      <div className="flex justify-between text-[11px] font-bold mb-0.5">
-                        <span>PASSING</span>
-                        <span>{currentPlayer.stats.passing}</span>
-                      </div>
-                      <div className="w-full h-2 bg-[#FFF8E7] border border-black">
-                        <div className="h-full bg-[#3D5AFE]" style={{ width: `${currentPlayer.stats.passing}%` }} />
-                      </div>
-                    </div>
-
-                    <div>
-                      <div className="flex justify-between text-[11px] font-bold mb-0.5">
-                        <span>DRIBBLING</span>
-                        <span>{currentPlayer.stats.dribbling}</span>
-                      </div>
-                      <div className="w-full h-2 bg-[#FFF8E7] border border-black">
-                        <div className="h-full bg-[#B6FF3B]" style={{ width: `${currentPlayer.stats.dribbling}%` }} />
-                      </div>
-                    </div>
-
-                    <div>
-                      <div className="flex justify-between text-[11px] font-bold mb-0.5">
-                        <span>DEFENDING</span>
-                        <span>{currentPlayer.stats.defending}</span>
-                      </div>
-                      <div className="w-full h-2 bg-[#FFF8E7] border border-black">
-                        <div className="h-full bg-[#FF6D00]" style={{ width: `${currentPlayer.stats.defending}%` }} />
-                      </div>
-                    </div>
-
-                    <div>
-                      <div className="flex justify-between text-[11px] font-bold mb-0.5">
-                        <span>PHYSICAL</span>
-                        <span>{currentPlayer.stats.physical}</span>
-                      </div>
-                      <div className="w-full h-2 bg-[#FFF8E7] border border-black">
-                        <div className="h-full bg-black" style={{ width: `${currentPlayer.stats.physical}%` }} />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
+                );
+              })()}
 
               {/* Auction Gross Metrics */}
               <div className="bg-white border-4 border-black brutal-shadow-lg p-5 space-y-4">
