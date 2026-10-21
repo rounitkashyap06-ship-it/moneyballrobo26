@@ -1,0 +1,6 @@
+{
+  "name": "Moneyball - Football Player Auction",
+  "description": "Live real-time football player auction platform with synchronized bidding simulation, admin console, team balances, and cinematic sold animations for Robofiesta'26.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
